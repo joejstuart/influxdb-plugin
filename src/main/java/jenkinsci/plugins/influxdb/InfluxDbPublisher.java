@@ -94,6 +94,23 @@ public class InfluxDbPublisher extends Notifier implements SimpleBuildStep{
      */
     private Map<String, Map<String, Object>> customDataMap;
 
+    /**
+     * custom tags that are sent to all measurements defined in customDataMaps.
+     *
+     * Example for a pipeline script:
+     *
+     * def myCustomTags = [:]
+     * myCustomTags["buildResult"] = currentBuild.result
+     * myCustomTags["NODE_LABELS"] = env.NODE_LABELS
+     * step([$class: 'InfluxDbPublisher',
+     *       target: myTarget,
+     *       customPrefix: 'myPrefix',
+     *       customDataMap: myCustomDataMap,
+     *       customDataMapTags: myCustomTags])
+     */
+
+    private Map<String, String> customDataMapTags;
+
     public InfluxDbPublisher() {
     }
 
@@ -154,6 +171,13 @@ public class InfluxDbPublisher extends Notifier implements SimpleBuildStep{
     public Map<String, Map<String, Object>> getCustomDataMap() {
         return customDataMap;
     }
+
+    @DataBoundSetter
+    public void setCustomDataMapTags(Map<String, String> customDataMapTags) {
+        this.customDataMapTags = customDataMapTags;
+    }
+
+    public Map<String, String> getCustomDataMapTags() { return customDataMapTags; }
 
     public Target getTarget() {
         Target[] targets = DESCRIPTOR.getTargets();
@@ -223,7 +247,7 @@ public class InfluxDbPublisher extends Notifier implements SimpleBuildStep{
             addPoints(pointsToWrite, cdGen, listener);
         }
 
-        CustomDataMapPointGenerator cdmGen = new CustomDataMapPointGenerator(measurementRenderer, customPrefix, build, customDataMap);
+        CustomDataMapPointGenerator cdmGen = new CustomDataMapPointGenerator(measurementRenderer, customPrefix, build, customDataMap, customDataMapTags);
         if (cdmGen.hasReport()) {
             listener.getLogger().println("[InfluxDB Plugin] Custom data map found. Writing to InfluxDB...");
             addPoints(pointsToWrite, cdmGen, listener);
